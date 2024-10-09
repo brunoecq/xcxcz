@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login, register, updateProfile } from '../api'
+import { login, register, updateProfile as apiUpdateProfile } from '../api'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -35,9 +35,9 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token')
   }
 
-  const updateUserProfile = async (profileData: any) => {
+  const updateProfile = async (profileData: any) => {
     try {
-      const response = await updateProfile(profileData)
+      const response = await apiUpdateProfile(profileData)
       user.value = response.data
     } catch (error) {
       console.error('Profile update failed:', error)
@@ -45,5 +45,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, isAuthenticated, loginUser, registerUser, logout, updateUserProfile }
+  return { user, token, isAuthenticated, loginUser, registerUser, logout, updateProfile }
 })

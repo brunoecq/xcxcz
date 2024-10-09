@@ -95,12 +95,13 @@ app.post('/login', async (req, res) => {
 
 app.get('/users', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT id, name, email, nativeLanguage, country, timezone FROM users');
+    const [rows] = await pool.execute('SELECT id, name, email, nativeLanguage, country, timezone, availability, allowRandomCalls FROM users');
     
     // Fetch learning languages for each user
     for (let user of rows) {
       const [learningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [user.id]);
       user.learningLanguages = learningLanguages;
+      user.availability = JSON.parse(user.availability || '[]');
     }
     
     res.json(rows);
