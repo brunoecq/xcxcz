@@ -1,0 +1,64 @@
+CREATE DATABASE IF NOT EXISTS language_chat_db;
+USE language_chat_db;
+
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  nativeLanguage VARCHAR(50) NOT NULL,
+  country VARCHAR(100) NOT NULL,
+  timezone VARCHAR(50) NOT NULL,
+  availability JSON,
+  allowRandomCalls BOOLEAN DEFAULT FALSE,
+  score INT DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE learning_languages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  userId INT NOT NULL,
+  language VARCHAR(50) NOT NULL,
+  level VARCHAR(20) NOT NULL,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  senderId INT NOT NULL,
+  receiverId INT NOT NULL,
+  text TEXT NOT NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (senderId) REFERENCES users(id),
+  FOREIGN KEY (receiverId) REFERENCES users(id)
+);
+
+CREATE TABLE reviews (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  reviewerId INT NOT NULL,
+  reviewedId INT NOT NULL,
+  rating INT NOT NULL,
+  comment TEXT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (reviewerId) REFERENCES users(id),
+  FOREIGN KEY (reviewedId) REFERENCES users(id)
+);
+
+CREATE TABLE reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  reporterId INT NOT NULL,
+  reportedId INT NOT NULL,
+  reason TEXT NOT NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (reporterId) REFERENCES users(id),
+  FOREIGN KEY (reportedId) REFERENCES users(id)
+);
+
+CREATE TABLE blocked_users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  blockerId INT NOT NULL,
+  blockedId INT NOT NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (blockerId) REFERENCES users(id),
+  FOREIGN KEY (blockedId) REFERENCES users(id)
+);

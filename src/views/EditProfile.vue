@@ -1,0 +1,148 @@
+<template>
+  <div class="container mx-auto px-4 py-8">
+    <h2 class="text-2xl font-semibold mb-6">Edit Profile</h2>
+    <form @submit.prevent="updateProfile" class="max-w-lg mx-auto">
+      <div class="mb-4">
+        <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+        <input v-model="profile.name" id="name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+      </div>
+      <div class="mb-4">
+        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+        <input v-model="profile.email" id="email" type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+      </div>
+      <div class="mb-4">
+        <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+        <select v-model="profile.country" id="country" @change="updateTimezones" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <option v-for="country in countries" :key="country.code" :value="country.name">{{ country.name }}</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label for="timezone" class="block text-sm font-medium text-gray-700">Timezone</label>
+        <select v-model="profile.timezone" id="timezone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <option v-for="tz in timezones" :key="tz" :value="tz">{{ tz }}</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label for="nativeLanguage" class="block text-sm font-medium text-gray-700">Native Language</label>
+        <select v-model="profile.nativeLanguage" id="nativeLanguage" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.name }}</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">Learning Languages</label>
+        <div v-for="(lang, index) in profile.learningLanguages" :key="index" class="flex space-x-2 mt-2">
+          <select v-model="lang.code" class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <option v-for="l in languages" :key="l.code" :value="l.code">{{ l.name }}</option>
+          </select>
+          <select v-model="lang.level" class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+          <button @click.prevent="removeLearningLanguage(index)" class="mt-1 px-2 py-1 bg-red-500 text-white rounded-md">Remove</button>
+        </div>
+        <button @click.prevent="addLearningLanguage" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-md">Add Language</button>
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">Availability</label>
+        <div v-for="(day, index) in profile.availability" :key="index" class="flex space-x-2 mt-2">
+          <select v-model="day.day" class="mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
+          <input v-model="day.startTime" type="time" class="mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <input v-model="day.endTime" type="time" class="mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <button @click.prevent="removeAvailability(index)" class="mt-1 px-2 py-1 bg-red-500 text-white rounded-md">Remove</button>
+        </div>
+        <button @click.prevent="addAvailability" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-md">Add Availability</button>
+      </div>
+      <div class="mb-4">
+        <label for="allowRandomCalls" class="flex items-center">
+          <input v-model="profile.allowRandomCalls" id="allowRandomCalls" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <span class="ml-2 text-sm text-gray-600">Allow Random Calls</span>
+        </label>
+      </div>
+      <div class="mt-6">
+        <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Update Profile
+        </button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/authStore'
+import countriesData from '../data/countries.json'
+import languagesData from '../data/languages.json'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const countries = ref(countriesData)
+const languages = ref(languagesData)
+const timezones = ref([])
+
+const profile = ref({
+  name: '',
+  email: '',
+  country: '',
+  timezone: '',
+  nativeLanguage: '',
+  learningLanguages: [],
+  availability: [],
+  allowRandomCalls: false
+})
+
+onMounted(() => {
+  if (authStore.user) {
+    profile.value = { ...authStore.user }
+    updateTimezones()
+  } else {
+    router.push('/login')
+  }
+})
+
+const updateTimezones = () => {
+  const selectedCountry = countries.value.find(c => c.name === profile.value.country)
+  if (selectedCountry) {
+    timezones.value = selectedCountry.timezones
+    if (!timezones.value.includes(profile.value.timezone)) {
+      profile.value.timezone = timezones.value[0]
+    }
+  }
+}
+
+const addLearningLanguage = () => {
+  profile.value.learningLanguages.push({ code: '', level: 'Beginner' })
+}
+
+const removeLearningLanguage = (index: number) => {
+  profile.value.learningLanguages.splice(index, 1)
+}
+
+const addAvailability = () => {
+  profile.value.availability.push({ day: 'Monday', startTime: '09:00', endTime: '17:00' })
+}
+
+const removeAvailability = (index: number) => {
+  profile.value.availability.splice(index, 1)
+}
+
+const updateProfile = async () => {
+  try {
+    await authStore.updateProfile(profile.value)
+    router.push('/')
+  } catch (error) {
+    console.error('Failed to update profile:', error)
+    // Handle error (e.g., show error message to user)
+  }
+}
+</script>

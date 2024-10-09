@@ -1,0 +1,32 @@
+[
+  {
+    "name": "United States",
+    "code": "US",
+    "timezones": ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles"]
+  },
+  {
+    "name": "United Kingdom",
+    "code": "GB",
+    "timezones": ["Europe/London"]
+  },
+  {
+    "name": "Japan",
+    "code": "JP",
+    "timezones": ["Asia/Tokyo"]
+  },
+  {
+    "name": "Germany",
+    "code": "DE",
+    "timezones": ["Europe/Berlin"]
+  },
+  {
+    "name": "France",
+    "code": "FR",
+    "timezones": ["Europe/Paris"]
+  },
+  {
+    "name": "Spain",
+    "code": "ES",
+    "timezones": ["Europe/Madrid"]
+  }
+]

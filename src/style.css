@@ -1,0 +1,10 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+body {
+  @apply bg-gray-100;
+}
+#app {
+  @apply max-w-6xl mx-auto p-4;
+} 
