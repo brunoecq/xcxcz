@@ -103,6 +103,7 @@ const profile = ref({
 
 onMounted(() => {
   if (authStore.user) {
+    
     profile.value = { ...authStore.user }
     if (!profile.value.availability) {
       profile.value.availability = []
