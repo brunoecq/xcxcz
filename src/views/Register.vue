@@ -41,16 +41,16 @@
           <div>
             <label for="nativeLanguage" class="block text-sm font-medium text-gray-700">Native Language</label>
             <select v-model="nativeLanguage" id="nativeLanguage" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-              <option v-for="lang in languages" :key="lang.code" :value="lang.name">{{ lang.name }}</option>
+              <option v-for="lang in languages" :key="lang.code" :value="lang.code">{{ lang.name }}</option>
             </select>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700">Learning Languages</label>
             <div v-for="(lang, index) in learningLanguages" :key="index" class="mt-2 flex items-center">
-              <select v-model="lang.name" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+              <select v-model="lang.language" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 <option value="">Select a language</option>
-                <option v-for="l in languages" :key="l.code" :value="l.name">{{ l.name }}</option>
+                <option v-for="l in languages" :key="l.code" :value="l.code">{{ l.name }}</option>
               </select>
               <select v-model="lang.level" class="ml-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 <option value="Beginner">Beginner</option>
@@ -158,7 +158,7 @@ const register = async () => {
       country: country.value,
       timezone: timezone.value,
       nativeLanguage: nativeLanguage.value,
-      learningLanguages: learningLanguages.value.filter(lang => lang.name && lang.level)
+      learningLanguages: learningLanguages.value.filter(lang => lang.language && lang.level)
     })
     router.push('/login')
   } catch (error) {

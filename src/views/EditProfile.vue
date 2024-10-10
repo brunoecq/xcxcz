@@ -45,8 +45,8 @@
       </div>
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700">Availability</label>
-        <div v-for="(day, index) in profile.availability" :key="index" class="flex space-x-2 mt-2">
-          <select v-model="day.day" class="mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+        <div v-for="(slot, index) in profile.availability" :key="index" class="flex space-x-2 mt-2">
+          <select v-model="slot.day" class="mt-1 block w-1/4 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
             <option value="Monday">Monday</option>
             <option value="Tuesday">Tuesday</option>
             <option value="Wednesday">Wednesday</option>
@@ -55,8 +55,8 @@
             <option value="Saturday">Saturday</option>
             <option value="Sunday">Sunday</option>
           </select>
-          <input v-model="day.startTime" type="time" class="mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-          <input v-model="day.endTime" type="time" class="mt-1 block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <input v-model="slot.startTime" type="time" class="mt-1 block w-1/4 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <input v-model="slot.endTime" type="time" class="mt-1 block w-1/4 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
           <button @click.prevent="removeAvailability(index)" class="mt-1 px-2 py-1 bg-red-500 text-white rounded-md">Remove</button>
         </div>
         <button @click.prevent="addAvailability" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-md">Add Availability</button>
@@ -73,7 +73,6 @@
         </button>
       </div>
       
-      <!-- ... other form fields ... -->
     </form>
   </div>
 </template>
@@ -110,7 +109,7 @@ onMounted(() => {
       ...authStore.user,
       learningLanguages: authStore.user.learningLanguages || [],
       availability: authStore.user.availability || [],
-      allowRandomCalls: authStore.user.allowRandomCalls || false
+      allowRandomCalls: Number.isInteger(authStore.user.allowRandomCalls) ? authStore.user.allowRandomCalls == 1 :  authStore.user.allowRandomCalls || false
     }
     updateTimezones()
   } else {

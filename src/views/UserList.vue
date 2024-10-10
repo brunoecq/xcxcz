@@ -38,7 +38,10 @@
           {{ $t('allowRandomCalls') }}: {{ user.allowRandomCalls ? $t('yes') : $t('no') }}
         </p>
         <p class="text-sm text-gray-500 mb-4">
-          {{ $t('availability') }}: {{ formatAvailability(user.availability) }}
+          {{ $t('availability') }}:
+          <span v-for="(slot, index) in user.availability" :key="index">
+            {{ slot.day }} {{ slot.startTime }}-{{ slot.endTime }}{{ index < user.availability.length - 1 ? ', ' : '' }}
+          </span>
         </p>
         <div class="flex space-x-2">
           <button @click="startChat(user.id)" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
@@ -122,8 +125,8 @@ const getCurrentTime = (timezone: string) => {
   return new Date().toLocaleString('en-US', { timeZone: timezone, hour: '2-digit', minute: '2-digit' })
 }
 
-const formatAvailability = (availability: string[]) => {
-  return availability.join(', ')
+const formatAvailability = (availability: { day: string, startTime: string, endTime: string }[]) => {
+  return availability.map(slot => `${slot.day} ${slot.startTime}-${slot.endTime}`).join(', ')
 }
 
 const startRandomCall = async () => {

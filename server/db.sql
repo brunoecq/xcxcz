@@ -9,7 +9,6 @@ CREATE TABLE users (
   nativeLanguage VARCHAR(50) NOT NULL,
   country VARCHAR(100) NOT NULL,
   timezone VARCHAR(50) NOT NULL,
-  availability JSON,
   allowRandomCalls BOOLEAN DEFAULT FALSE,
   score INT DEFAULT 0,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -20,6 +19,15 @@ CREATE TABLE learning_languages (
   userId INT NOT NULL,
   language VARCHAR(50) NOT NULL,
   level VARCHAR(20) NOT NULL,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE availability (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  userId INT NOT NULL,
+  day VARCHAR(10) NOT NULL,
+  startTime TIME NOT NULL,
+  endTime TIME NOT NULL,
   FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 

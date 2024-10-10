@@ -48,12 +48,12 @@ const authenticateToken = (req, res, next) => {
 // Routes
 app.post('/register', async (req, res) => {
   try {
-    const { name, email, password, nativeLanguage, learningLanguages, country, timezone } = req.body;
+    const { name, email, password, nativeLanguage, learningLanguages, country, timezone, availability } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await pool.execute(
       'INSERT INTO users (name, email, password, nativeLanguage, country, timezone) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, nativeLanguage, country, timezone]
+      [name || null, email || null, hashedPassword || null, nativeLanguage || null, country || null, timezone || null]
     );
 
     const userId = result.insertId;
@@ -62,7 +62,7 @@ app.post('/register', async (req, res) => {
     for (const lang of learningLanguages) {
       await pool.execute(
         'INSERT INTO learning_languages (userId, language, level) VALUES (?, ?, ?)',
-        [userId, lang.code, lang.level]
+        [userId, lang.language, lang.level]
       );
     }
 
@@ -83,7 +83,10 @@ app.post('/login', async (req, res) => {
       // Fetch learning languages
       const [learningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [rows[0].id]);
       
-      const user = { ...rows[0], password: undefined, learningLanguages };
+      // Fetch availability
+      const [availability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [rows[0].id]);
+      
+      const user = { ...rows[0], password: undefined, learningLanguages, availability };
       res.json({ token, user });
     } else {
       res.status(400).json({ error: 'Invalid credentials' });
@@ -95,13 +98,14 @@ app.post('/login', async (req, res) => {
 
 app.get('/users', async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT id, name, email, nativeLanguage, country, timezone, availability, allowRandomCalls FROM users');
+    const [rows] = await pool.execute('SELECT id, name, email, nativeLanguage, country, timezone, allowRandomCalls FROM users');
     
-    // Fetch learning languages for each user
+    // Fetch learning languages and availability for each user
     for (let user of rows) {
       const [learningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [user.id]);
+      const [availability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [user.id]);
       user.learningLanguages = learningLanguages;
-      user.availability = JSON.parse(user.availability || '[]');
+      user.availability = availability;
     }
     
     res.json(rows);
@@ -232,8 +236,8 @@ app.put('/profile', authenticateToken, async (req, res) => {
 
     // Update user information
     await pool.execute(
-      'UPDATE users SET name = ?, email = ?, nativeLanguage = ?, country = ?, timezone = ?, availability = ?, allowRandomCalls = ? WHERE id = ?',
-      safeValues
+      'UPDATE users SET name = ?, email = ?, nativeLanguage = ?, country = ?, timezone = ?, allowRandomCalls = ? WHERE id = ?',
+      [name || null, email || null, nativeLanguage || null, country || null, timezone || null, allowRandomCalls !== undefined ? allowRandomCalls : null, id]
     );
 
     // Update learning languages
@@ -249,14 +253,29 @@ app.put('/profile', authenticateToken, async (req, res) => {
       }
     }
 
+    // Update availability
+    await pool.execute('DELETE FROM availability WHERE userId = ?', [id]);
+    if (Array.isArray(availability)) {
+      for (const slot of availability) {
+        if (slot && slot.day && slot.startTime && slot.endTime) {
+          await pool.execute(
+            'INSERT INTO availability (userId, day, startTime, endTime) VALUES (?, ?, ?, ?)',
+            [id, slot.day, slot.startTime, slot.endTime]
+          );
+        }
+      }
+    }
+
     // Fetch updated user data
     const [updatedUser] = await pool.execute('SELECT * FROM users WHERE id = ?', [id]);
     const [updatedLearningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [id]);
+    const [updatedAvailability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [id]);
 
     const userResponse = {
       ...updatedUser[0],
       password: undefined,
-      learningLanguages: updatedLearningLanguages
+      learningLanguages: updatedLearningLanguages,
+      availability: updatedAvailability
     };
 
     res.json({ message: 'Profile updated successfully', user: userResponse });
