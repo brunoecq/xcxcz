@@ -57,6 +57,8 @@
         </div>
       </div>
     </footer>
+
+    <ToastNotification />
   </div>
 </template>
 
@@ -66,6 +68,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/authStore'
 import { useI18n } from 'vue-i18n'
 import NotificationCenter from './components/NotificationCenter.vue'
+import ToastNotification from './components/ToastNotification.vue'
 
 const { t } = useI18n()
 const router = useRouter()

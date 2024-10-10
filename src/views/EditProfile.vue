@@ -72,20 +72,21 @@
           Update Profile
         </button>
       </div>
-      
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import { useToastStore } from '../stores/toastStore'
 import countriesData from '../data/countries.json'
 import languagesData from '../data/languages.json'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 
 const countries = ref(countriesData)
 const languages = ref(languagesData)
@@ -103,19 +104,30 @@ const profile = ref({
   allowRandomCalls: false
 })
 
-onMounted(() => {
+const loadUserProfile = () => {
   if (authStore.user) {
     profile.value = { 
       ...authStore.user,
       learningLanguages: authStore.user.learningLanguages || [],
       availability: authStore.user.availability || [],
-      allowRandomCalls: Number.isInteger(authStore.user.allowRandomCalls) ? authStore.user.allowRandomCalls == 1 :  authStore.user.allowRandomCalls || false
+      allowRandomCalls: Number.isInteger(authStore.user.allowRandomCalls) ? authStore.user.allowRandomCalls == 1 : authStore.user.allowRandomCalls || false
     }
     updateTimezones()
   } else {
     router.push('/login')
   }
+}
+
+onMounted(() => {
+  loadUserProfile()
 })
+
+watch(() => authStore.user, (newUser) => {
+  if (newUser) {
+    loadUserProfile()
+  }
+})
+
 
 const updateTimezones = () => {
   const selectedCountry = countries.value.find(c => c.name === profile.value.country)
@@ -149,11 +161,12 @@ const updateProfile = async () => {
     const updatedProfile = await authStore.updateProfile(profile.value)
     if (updatedProfile) {
       console.log('Profile updated successfully:', updatedProfile)
+      toastStore.showToast('Profile updated successfully', 'success')
       router.push('/')
     }
   } catch (error) {
     console.error('Failed to update profile:', error)
-    // Handle error (e.g., show error message to user)
+    toastStore.showToast('Failed to update profile', 'error')
   }
 }
 </script>
