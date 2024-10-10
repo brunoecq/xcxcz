@@ -118,7 +118,7 @@ const password = ref('')
 const country = ref('')
 const timezone = ref('')
 const nativeLanguage = ref('')
-const learningLanguages = ref([{ name: '', level: '' }])
+const learningLanguages = ref([{ language: '', level: '' }])
 const acceptTerms = ref(false)
 
 const countries = ref(countriesData)
@@ -134,7 +134,7 @@ const updateTimezones = () => {
 }
 
 const addLearningLanguage = () => {
-  learningLanguages.value.push({ name: '', level: '' })
+  learningLanguages.value.push({ language: '', level: '' })
 }
 
 const register = async () => {

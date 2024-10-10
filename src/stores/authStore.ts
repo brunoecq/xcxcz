@@ -39,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await apiUpdateProfile(profileData)
       user.value = response.data
+      return response.data
     } catch (error) {
       console.error('Profile update failed:', error)
       throw error

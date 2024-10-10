@@ -30,16 +30,16 @@
       </div>
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700">Learning Languages</label>
-        <div v-for="(lang, index) in profile.learningLanguages" :key="index" class="flex space-x-2 mt-2">
-          <select v-model="lang.code" class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+        <div v-for="(lang, index) in profile.learningLanguages" :key="index" class="mt-2 flex items-center">
+          <select v-model="lang.language" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <option value="">Select a language</option>
             <option v-for="l in languages" :key="l.code" :value="l.code">{{ l.name }}</option>
           </select>
-          <select v-model="lang.level" class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+          <select v-model="lang.level" class="ml-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
             <option value="Beginner">Beginner</option>
             <option value="Intermediate">Intermediate</option>
             <option value="Advanced">Advanced</option>
           </select>
-          <button @click.prevent="removeLearningLanguage(index)" class="mt-1 px-2 py-1 bg-red-500 text-white rounded-md">Remove</button>
         </div>
         <button @click.prevent="addLearningLanguage" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-md">Add Language</button>
       </div>
@@ -72,6 +72,8 @@
           Update Profile
         </button>
       </div>
+      
+      <!-- ... other form fields ... -->
     </form>
   </div>
 </template>
@@ -91,6 +93,7 @@ const languages = ref(languagesData)
 const timezones = ref([])
 
 const profile = ref({
+  id: '',
   name: '',
   email: '',
   country: '',
@@ -103,10 +106,11 @@ const profile = ref({
 
 onMounted(() => {
   if (authStore.user) {
-    
-    profile.value = { ...authStore.user }
-    if (!profile.value.availability) {
-      profile.value.availability = []
+    profile.value = { 
+      ...authStore.user,
+      learningLanguages: authStore.user.learningLanguages || [],
+      availability: authStore.user.availability || [],
+      allowRandomCalls: authStore.user.allowRandomCalls || false
     }
     updateTimezones()
   } else {
@@ -125,7 +129,7 @@ const updateTimezones = () => {
 }
 
 const addLearningLanguage = () => {
-  profile.value.learningLanguages.push({ code: '', level: 'Beginner' })
+  profile.value.learningLanguages.push({ language: '', level: 'Beginner' })
 }
 
 const removeLearningLanguage = (index: number) => {
@@ -142,8 +146,12 @@ const removeAvailability = (index: number) => {
 
 const updateProfile = async () => {
   try {
-    await authStore.updateProfile(profile.value)
-    router.push('/')
+    console.log('Updating profile with:', profile.value);
+    const updatedProfile = await authStore.updateProfile(profile.value)
+    if (updatedProfile) {
+      console.log('Profile updated successfully:', updatedProfile)
+      router.push('/')
+    }
   } catch (error) {
     console.error('Failed to update profile:', error)
     // Handle error (e.g., show error message to user)

@@ -62,7 +62,7 @@ app.post('/register', async (req, res) => {
     for (const lang of learningLanguages) {
       await pool.execute(
         'INSERT INTO learning_languages (userId, language, level) VALUES (?, ?, ?)',
-        [userId, lang.name, lang.level]
+        [userId, lang.code, lang.level]
       );
     }
 
@@ -214,22 +214,54 @@ app.delete('/block', authenticateToken, async (req, res) => {
 app.put('/profile', authenticateToken, async (req, res) => {
   try {
     const { id, name, email, nativeLanguage, learningLanguages, country, timezone, availability, allowRandomCalls } = req.body;
+    
+    // Ensure all values are defined, use null for undefined values
+    const safeValues = [
+      name || null,
+      email || null,
+      nativeLanguage || null,
+      country || null,
+      timezone || null,
+      availability ? JSON.stringify(availability) : null,
+      allowRandomCalls !== undefined ? allowRandomCalls : null,
+      id
+    ];
+
+    // Log the safeValues for debugging
+    console.log('Safe values for update:', safeValues);
+
+    // Update user information
     await pool.execute(
       'UPDATE users SET name = ?, email = ?, nativeLanguage = ?, country = ?, timezone = ?, availability = ?, allowRandomCalls = ? WHERE id = ?',
-      [name, email, nativeLanguage, country, timezone, JSON.stringify(availability), allowRandomCalls, id]
+      safeValues
     );
 
     // Update learning languages
     await pool.execute('DELETE FROM learning_languages WHERE userId = ?', [id]);
-    for (const lang of learningLanguages) {
-      await pool.execute(
-        'INSERT INTO learning_languages (userId, language, level) VALUES (?, ?, ?)',
-        [id, lang.name, lang.level]
-      );
+    if (Array.isArray(learningLanguages)) {
+      for (const lang of learningLanguages) {
+        if (lang && lang.language && lang.level) {
+          await pool.execute(
+            'INSERT INTO learning_languages (userId, language, level) VALUES (?, ?, ?)',
+            [id, lang.language, lang.level]
+          );
+        }
+      }
     }
 
-    res.json({ message: 'Profile updated successfully' });
+    // Fetch updated user data
+    const [updatedUser] = await pool.execute('SELECT * FROM users WHERE id = ?', [id]);
+    const [updatedLearningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [id]);
+
+    const userResponse = {
+      ...updatedUser[0],
+      password: undefined,
+      learningLanguages: updatedLearningLanguages
+    };
+
+    res.json({ message: 'Profile updated successfully', user: userResponse });
   } catch (error) {
+    console.error('Error updating profile:', error);
     res.status(500).json({ error: error.message });
   }
 });
