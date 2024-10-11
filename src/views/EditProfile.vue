@@ -119,6 +119,7 @@ const loadUserProfile = () => {
 }
 
 onMounted(() => {
+  debugger
   loadUserProfile()
 })
 
