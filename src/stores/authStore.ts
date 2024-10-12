@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login, register, updateProfile as apiUpdateProfile } from '../api'
+import { login, register, updateProfile as apiUpdateProfile, refreshToken } from '../api'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -14,6 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = response.data.token
       user.value = response.data.user
       localStorage.setItem('token', token.value)
+      startRefreshTokenTimer()
     } catch (error) {
       console.error('Login failed:', error)
       throw error
@@ -33,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     localStorage.removeItem('token')
+    stopRefreshTokenTimer()
   }
 
   const updateProfile = async (profileData: any) => {
@@ -46,5 +48,40 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, isAuthenticated, loginUser, registerUser, logout, updateProfile }
+  let refreshTokenTimeout: number
+
+  const startRefreshTokenTimer = () => {
+    const jwtToken = JSON.parse(atob(token.value.split('.')[1]))
+    const expires = new Date(jwtToken.exp * 1000)
+    const timeout = expires.getTime() - Date.now() - (60 * 1000)
+    refreshTokenTimeout = setTimeout(refreshTokenFn, timeout)
+  }
+
+  const stopRefreshTokenTimer = () => {
+    clearTimeout(refreshTokenTimeout)
+  }
+
+  const refreshTokenFn = async () => {
+    try {
+      const response = await refreshToken()
+      token.value = response.data.token
+      localStorage.setItem('token', token.value)
+      startRefreshTokenTimer()
+    } catch (error) {
+      console.error('Token refresh failed:', error)
+      logout()
+    }
+  }
+
+  // Initialize the auth state
+  const initAuth = () => {
+    debugger
+    const storedToken = localStorage.getItem('token')
+    if (storedToken) {
+      token.value = storedToken
+      startRefreshTokenTimer()
+    }
+  }
+
+  return { user, token, isAuthenticated, loginUser, registerUser, logout, updateProfile, initAuth }
 })

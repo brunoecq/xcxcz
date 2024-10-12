@@ -86,7 +86,7 @@ app.post('/login', async (req, res) => {
     const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email || null]);
 
     if (rows.length > 0 && await bcrypt.compare(password, rows[0].password)) {
-      const token = jwt.sign({ id: rows[0].id, email: rows[0].email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ id: rows[0].id, email: rows[0].email }, process.env.JWT_SECRET, { expiresIn: '5m' });
       
       // Fetch learning languages
       const [learningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [rows[0].id || null]);
@@ -104,7 +104,16 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.get('/users', async (req, res) => {
+app.post('/refresh-token', authenticateToken, async (req, res) => {
+  try {
+    const token = jwt.sign({ id: req.user.id, email: req.user.email }, process.env.JWT_SECRET, { expiresIn: '5m' });
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/users', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT id, name, email, nativeLanguage, country, timezone, allowRandomCalls FROM users');
     
@@ -271,7 +280,7 @@ app.put('/profile', authenticateToken, async (req, res) => {
 });
 
 // Room routes
-app.get('/rooms', async (req, res) => {
+app.get('/rooms', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.execute('SELECT * FROM rooms WHERE is_active = 1');
     res.json(rows);

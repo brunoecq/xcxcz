@@ -36,5 +36,6 @@ export const createRoom = (roomData: any) => api.post('/rooms', roomData);
 export const joinRoom = (roomId: string, userId: string) => api.post(`/rooms/${roomId}/join`, { userId });
 export const leaveRoom = (roomId: string, userId: string) => api.post(`/rooms/${roomId}/leave`, { userId });
 export const assignCoHost = (roomId: string, userId: string) => api.post(`/rooms/${roomId}/assign-cohost`, { userId });
+export const refreshToken = () => api.post('/refresh-token');
 
 export default api;
