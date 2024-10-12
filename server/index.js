@@ -53,7 +53,7 @@ app.post('/register', async (req, res) => {
 
     const [result] = await pool.execute(
       'INSERT INTO users (name, email, password, nativeLanguage, country, timezone) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, email, hashedPassword, nativeLanguage, country, timezone]
+      [name || null, email || null, hashedPassword || null, nativeLanguage || null, country || null, timezone || null]
     );
 
     const userId = result.insertId;
@@ -62,7 +62,7 @@ app.post('/register', async (req, res) => {
     for (const lang of learningLanguages) {
       await pool.execute(
         'INSERT INTO learning_languages (userId, language, level) VALUES (?, ?, ?)',
-        [userId, lang.language, lang.level]
+        [userId || null, lang.language || null, lang.level || null]
       );
     }
 
@@ -70,7 +70,7 @@ app.post('/register', async (req, res) => {
     for (const slot of availability) {
       await pool.execute(
         'INSERT INTO availability (userId, day, startTime, endTime) VALUES (?, ?, ?, ?)',
-        [userId, slot.day, slot.startTime, slot.endTime]
+        [userId || null, slot.day || null, slot.startTime || null, slot.endTime || null]
       );
     }
 
@@ -83,16 +83,16 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email || null]);
 
     if (rows.length > 0 && await bcrypt.compare(password, rows[0].password)) {
       const token = jwt.sign({ id: rows[0].id, email: rows[0].email }, process.env.JWT_SECRET, { expiresIn: '1h' });
       
       // Fetch learning languages
-      const [learningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [rows[0].id]);
+      const [learningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [rows[0].id || null]);
       
       // Fetch availability
-      const [availability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [rows[0].id]);
+      const [availability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [rows[0].id || null]);
       
       const user = { ...rows[0], password: undefined, learningLanguages, availability };
       res.json({ token, user });
@@ -149,7 +149,7 @@ app.post('/messages', authenticateToken, async (req, res) => {
     const { senderId, receiverId, text } = req.body;
     const [result] = await pool.execute(
       'INSERT INTO messages (senderId, receiverId, text) VALUES (?, ?, ?)',
-      [senderId, receiverId, text]
+      [senderId || null, receiverId || null, text || null]
     );
     const [newMessage] = await pool.execute('SELECT * FROM messages WHERE id = ?', [result.insertId]);
     res.status(201).json(newMessage[0]);
@@ -176,7 +176,7 @@ app.post('/reviews', authenticateToken, async (req, res) => {
     const { reviewerId, reviewedId, rating, comment } = req.body;
     const [result] = await pool.execute(
       'INSERT INTO reviews (reviewerId, reviewedId, rating, comment) VALUES (?, ?, ?, ?)',
-      [reviewerId, reviewedId, rating, comment]
+      [reviewerId || null, reviewedId || null, rating || null, comment || null]
     );
     res.status(201).json({ message: 'Review submitted successfully', reviewId: result.insertId });
   } catch (error) {
@@ -189,7 +189,7 @@ app.post('/report', authenticateToken, async (req, res) => {
     const { reporterId, reportedId, reason } = req.body;
     const [result] = await pool.execute(
       'INSERT INTO reports (reporterId, reportedId, reason) VALUES (?, ?, ?)',
-      [reporterId, reportedId, reason]
+      [reporterId || null, reportedId || null, reason || null]
     );
     res.status(201).json({ message: 'User reported successfully', reportId: result.insertId });
   } catch (error) {
@@ -202,7 +202,7 @@ app.post('/block', authenticateToken, async (req, res) => {
     const { blockerId, blockedId } = req.body;
     await pool.execute(
       'INSERT INTO blocked_users (blockerId, blockedId) VALUES (?, ?)',
-      [blockerId, blockedId]
+      [blockerId || null, blockedId || null]
     );
     res.status(201).json({ message: 'User blocked successfully' });
   } catch (error) {
@@ -230,31 +230,31 @@ app.put('/profile', authenticateToken, async (req, res) => {
     // Update user information
     await pool.execute(
       'UPDATE users SET name = ?, email = ?, nativeLanguage = ?, country = ?, timezone = ?, allowRandomCalls = ? WHERE id = ?',
-      [name, email, nativeLanguage, country, timezone, allowRandomCalls, id]
+      [name || null, email || null, nativeLanguage || null, country || null, timezone || null, allowRandomCalls || null, id || null]
     );
 
     // Update learning languages
-    await pool.execute('DELETE FROM learning_languages WHERE userId = ?', [id]);
+    await pool.execute('DELETE FROM learning_languages WHERE userId = ?', [id || null]);
     for (const lang of learningLanguages) {
       await pool.execute(
         'INSERT INTO learning_languages (userId, language, level) VALUES (?, ?, ?)',
-        [id, lang.language, lang.level]
+        [id || null, lang.language || null, lang.level || null]
       );
     }
 
     // Update availability
-    await pool.execute('DELETE FROM availability WHERE userId = ?', [id]);
+    await pool.execute('DELETE FROM availability WHERE userId = ?', [id || null]);
     for (const slot of availability) {
       await pool.execute(
         'INSERT INTO availability (userId, day, startTime, endTime) VALUES (?, ?, ?, ?)',
-        [id, slot.day, slot.startTime, slot.endTime]
+        [id || null, slot.day || null, slot.startTime || null, slot.endTime || null]
       );
     }
 
     // Fetch updated user data
-    const [updatedUser] = await pool.execute('SELECT * FROM users WHERE id = ?', [id]);
-    const [updatedLearningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [id]);
-    const [updatedAvailability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [id]);
+    const [updatedUser] = await pool.execute('SELECT * FROM users WHERE id = ?', [id || null]);
+    const [updatedLearningLanguages] = await pool.execute('SELECT language, level FROM learning_languages WHERE userId = ?', [id || null]);
+    const [updatedAvailability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [id || null]);
 
     const userResponse = {
       ...updatedUser[0],
@@ -285,7 +285,7 @@ app.post('/rooms', authenticateToken, async (req, res) => {
     const { name, language, level, description } = req.body;
     const [result] = await pool.execute(
       'INSERT INTO rooms (name, language, level, description, created_by, host_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, language, level, description, req.user.id, req.user.id]
+      [name || null, language || null, level || null, description || null, req.user.id || null, req.user.id || null]
     );
     const roomId = result.insertId;
     res.status(201).json({ id: roomId, name, language, level, description, createdBy: req.user.id, hostId: req.user.id });
@@ -297,7 +297,7 @@ app.post('/rooms', authenticateToken, async (req, res) => {
 app.post('/rooms/:roomId/join', authenticateToken, async (req, res) => {
   try {
     const { roomId } = req.params;
-    await pool.execute('INSERT INTO room_users (room_id, user_id) VALUES (?, ?)', [roomId, req.user.id]);
+    await pool.execute('INSERT INTO room_users (room_id, user_id) VALUES (?, ?)', [roomId || null, req.user.id || null]);
     res.status(200).json({ message: 'Joined room successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -318,7 +318,7 @@ app.post('/rooms/:roomId/assign-cohost', authenticateToken, async (req, res) => 
   try {
     const { roomId } = req.params;
     const { userId } = req.body;
-    await pool.execute('UPDATE rooms SET cohost_id = ? WHERE id = ?', [userId, roomId]);
+    await pool.execute('UPDATE rooms SET cohost_id = ? WHERE id = ?', [userId || null, roomId || null]);
     res.status(200).json({ message: 'Co-host assigned successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -337,8 +337,8 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     socket.to(roomId).emit('user_joined', user);
     try {
-      await pool.execute('INSERT INTO room_users (room_id, user_id) VALUES (?, ?)', [roomId, user.id]);
-      await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [roomId]);
+      await pool.execute('INSERT INTO room_users (room_id, user_id) VALUES (?, ?)', [roomId || null, user.id || null]);
+      await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [roomId || null]);
     } catch (error) {
       console.error('Error joining room:', error);
     }
@@ -360,9 +360,9 @@ io.on('connection', (socket) => {
     try {
       await pool.execute(
         'INSERT INTO room_messages (room_id, user_id, message) VALUES (?, ?, ?)',
-        [message.roomId, message.senderId, message.text]
+        [message.roomId || null, message.senderId || null, message.text || null]
       );
-      await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [message.roomId]);
+      await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [message.roomId || null]);
     } catch (error) {
       console.error('Error saving message:', error);
     }
