@@ -94,7 +94,8 @@ app.post('/login', async (req, res) => {
       // Fetch availability
       const [availability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [rows[0].id || null]);
       
-      const user = { ...rows[0], password: undefined, learningLanguages, availability };
+      //const user = { ...rows[0], password: undefined, learningLanguages, availability };
+      //res.json({ token, user });
       res.json({ token, user });
     } else {
       res.status(400).json({ error: 'Invalid credentials' });

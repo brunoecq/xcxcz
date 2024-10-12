@@ -8,12 +8,37 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!token.value)
 
+  const decodeToken = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      }).join(''))
+      return JSON.parse(jsonPayload)
+    } catch (error) {
+      console.error('Error decoding token:', error)
+      return null
+    }
+  }
+
+  const setUserFromToken = (token: string) => {
+    const decodedToken = decodeToken(token)
+    if (decodedToken) {
+      user.value = {
+        id: decodedToken.id,
+        email: decodedToken.email,
+        // Añade aquí otros campos del usuario que estén en el token
+      }
+    }
+  }
+
   const loginUser = async (email: string, password: string) => {
     try {
       const response = await login(email, password)
       token.value = response.data.token
-      user.value = response.data.user
       localStorage.setItem('token', token.value)
+      setUserFromToken(token.value)
       startRefreshTokenTimer()
     } catch (error) {
       console.error('Login failed:', error)
@@ -51,10 +76,12 @@ export const useAuthStore = defineStore('auth', () => {
   let refreshTokenTimeout: number
 
   const startRefreshTokenTimer = () => {
-    const jwtToken = JSON.parse(atob(token.value.split('.')[1]))
-    const expires = new Date(jwtToken.exp * 1000)
-    const timeout = expires.getTime() - Date.now() - (60 * 1000)
-    refreshTokenTimeout = setTimeout(refreshTokenFn, timeout)
+    const jwtToken = decodeToken(token.value)
+    if (jwtToken && jwtToken.exp) {
+      const expires = new Date(jwtToken.exp * 1000)
+      const timeout = expires.getTime() - Date.now() - (60 * 1000)
+      refreshTokenTimeout = setTimeout(refreshTokenFn, timeout)
+    }
   }
 
   const stopRefreshTokenTimer = () => {
@@ -66,6 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await refreshToken()
       token.value = response.data.token
       localStorage.setItem('token', token.value)
+      setUserFromToken(token.value)
       startRefreshTokenTimer()
     } catch (error) {
       console.error('Token refresh failed:', error)
@@ -75,10 +103,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Initialize the auth state
   const initAuth = () => {
-    debugger
     const storedToken = localStorage.getItem('token')
     if (storedToken) {
       token.value = storedToken
+      setUserFromToken(storedToken)
       startRefreshTokenTimer()
     }
   }
