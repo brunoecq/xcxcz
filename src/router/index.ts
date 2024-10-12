@@ -11,6 +11,7 @@ import VideoCall from '../views/VideoCall.vue'
 import EditProfile from '../views/EditProfile.vue'
 import Terms from '../views/Terms.vue'
 import PrivacyPolicy from '../views/PrivacyPolicy.vue'
+import { useAuthStore } from '../stores/authStore'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -31,37 +32,44 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/users',
     name: 'UserList',
-    component: UserList
+    component: UserList,
+    meta: { requiresAuth: true }
   },
   {
     path: '/rooms',
     name: 'RoomList',
-    component: RoomList
+    component: RoomList,
+    meta: { requiresAuth: true }
   },
   {
     path: '/create-user',
     name: 'CreateUser',
-    component: CreateUser
+    component: CreateUser,
+    meta: { requiresAuth: true }
   },
   {
     path: '/chat/:roomId',
     name: 'ChatRoom',
-    component: ChatRoom
+    component: ChatRoom,
+    meta: { requiresAuth: true }
   },
   {
     path: '/chats',
     name: 'ChatList',
-    component: ChatList
+    component: ChatList,
+    meta: { requiresAuth: true }
   },
   {
     path: '/video-call/:userId',
     name: 'VideoCall',
-    component: VideoCall
+    component: VideoCall,
+    meta: { requiresAuth: true }
   },
   {
     path: '/edit-profile',
     name: 'EditProfile',
-    component: EditProfile
+    component: EditProfile,
+    meta: { requiresAuth: true }
   },
   {
     path: '/terms',
@@ -78,6 +86,15 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next({ name: 'Login' })
+  } else {
+    next()
+  }
 })
 
 export default router
