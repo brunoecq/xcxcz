@@ -1,6 +1,5 @@
 import axios from 'axios';
 import io from 'socket.io-client';
-import router from '../router';
 
 const API_URL = '/api';
 
@@ -20,17 +19,6 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      router.push('/login');
-    }
-    return Promise.reject(error);
-  }
-);
 
 export const login = (email: string, password: string) => api.post('/login', { email, password });
 export const register = (userData: any) => api.post('/register', userData);
