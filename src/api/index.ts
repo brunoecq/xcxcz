@@ -1,7 +1,7 @@
 import axios from 'axios';
 import io from 'socket.io-client';
 
-const API_URL = '/api'; // Cambiado para usar el proxy configurado en vite.config.ts
+const API_URL = '/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -35,5 +35,6 @@ export const getRooms = (page: number = 1, limit: number = 10) => api.get(`/room
 export const createRoom = (roomData: any) => api.post('/rooms', roomData);
 export const joinRoom = (roomId: string, userId: string) => api.post(`/rooms/${roomId}/join`, { userId });
 export const leaveRoom = (roomId: string, userId: string) => api.post(`/rooms/${roomId}/leave`, { userId });
+export const assignCoHost = (roomId: string, userId: string) => api.post(`/rooms/${roomId}/assign-cohost`, { userId });
 
 export default api;
