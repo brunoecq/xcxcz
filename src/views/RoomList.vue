@@ -95,7 +95,7 @@ const filteredRooms = computed(() => {
 })
 
 onMounted(async () => {
-  await loadRooms()
+  loadRooms()
   const observer = new IntersectionObserver(handleIntersect)
   if (loadMoreTrigger.value) {
     observer.observe(loadMoreTrigger.value)

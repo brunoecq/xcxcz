@@ -160,7 +160,7 @@ export const useRoomStore = defineStore('room', () => {
   })
 
   // Set up interval to remove inactive rooms
-  setInterval(removeInactiveRooms, 60000) // Check every minute
+  //setInterval(removeInactiveRooms, 60000) // Check every minute
 
   return { 
     rooms, 

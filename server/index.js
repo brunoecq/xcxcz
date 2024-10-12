@@ -383,7 +383,7 @@ const removeInactiveRooms = async () => {
 };
 
 // Set interval to remove inactive rooms every minute
-setInterval(removeInactiveRooms, 60000);
+//setInterval(removeInactiveRooms, 60000);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
