@@ -6,6 +6,7 @@ import UserList from '../views/UserList.vue'
 import RoomList from '../views/RoomList.vue'
 import CreateUser from '../views/CreateUser.vue'
 import ChatRoom from '../views/ChatRoom.vue'
+import UserChat from '../views/UserChat.vue'
 import ChatList from '../views/ChatList.vue'
 import VideoCall from '../views/VideoCall.vue'
 import EditProfile from '../views/EditProfile.vue'
@@ -44,9 +45,14 @@ const routes: Array<RouteRecordRaw> = [
     component: CreateUser
   },
   {
-    path: '/chat/:roomId',
+    path: '/chat/room/:roomId',
     name: 'ChatRoom',
     component: ChatRoom
+  },
+  {
+    path: '/chat/user/:userId',
+    name: 'UserChat',
+    component: UserChat
   },
   {
     path: '/chats',

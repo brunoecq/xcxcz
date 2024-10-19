@@ -7,7 +7,7 @@
             <div class="flex-shrink-0 flex items-center">
               <router-link to="/" class="text-white font-bold text-xl">Language Chat</router-link>
             </div>
-            <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div class="hidden sm:ml-6 sm:flex sm:space-x-8 content-center flex-wrap">
               <router-link to="/users" class="text-gray-300 hover:bg-indigo-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ $t('users') }}</router-link>
               <router-link to="/rooms" class="text-gray-300 hover:bg-indigo-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ $t('rooms') }}</router-link>
               <router-link to="/chats" class="text-gray-300 hover:bg-indigo-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">{{ $t('myChats') }}</router-link>

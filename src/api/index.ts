@@ -24,8 +24,9 @@ export const login = (email: string, password: string) => api.post('/login', { e
 export const register = (userData: any) => api.post('/register', userData);
 export const getUsers = (page: number = 1, limit: number = 10) => api.get(`/users?page=${page}&limit=${limit}`);
 export const getChats = (userId: string) => api.get(`/chats/${userId}`);
-export const getMessages = (userId1: string, userId2: string) => api.get(`/messages/${userId1}/${userId2}`);
-export const sendMessage = (senderId: string, receiverId: string, text: string) => api.post('/messages', { senderId, receiverId, text });
+export const getMessages = (userId1: string, userId2: string, page: number = 1, limit: number = 10) => api.get(`/messages/${userId1}/${userId2}?page=${page}&limit=${limit}`);
+export const getRoomMessages = (roomId: string, page: number = 1, limit: number = 10) => api.get(`/room-messages/${roomId}?page=${page}&limit=${limit}`);
+export const sendMessage = (senderId: string, receiverId: string | null, roomId: string | null, text: string) => api.post('/messages', { senderId, receiverId, roomId, text });
 export const updateProfile = (profileData: any) => api.put('/profile', profileData);
 export const submitReview = (reviewData: any) => api.post('/reviews', reviewData);
 export const reportUser = (reportData: any) => api.post('/report', reportData);

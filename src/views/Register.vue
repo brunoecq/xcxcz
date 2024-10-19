@@ -158,7 +158,8 @@ const register = async () => {
       country: country.value,
       timezone: timezone.value,
       nativeLanguage: nativeLanguage.value,
-      learningLanguages: learningLanguages.value.filter(lang => lang.language && lang.level)
+      learningLanguages: learningLanguages.value.filter(lang => lang.language && lang.level),
+      availability: []
     })
     router.push('/login')
   } catch (error) {

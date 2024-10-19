@@ -134,8 +134,8 @@ const joinRoom = async (roomId: string) => {
     return
   }
   try {
-    await roomStore.joinRoom(roomId, authStore.user.id.toString())
-    router.push(`/chat/${roomId}`)
+    await roomStore.joinRoom(roomId, { id: authStore.user.id, name: authStore.user.name })
+    router.push(`/chat/room/${roomId}`)
   } catch (error) {
     console.error('Error joining room:', error)
   }

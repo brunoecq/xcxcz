@@ -114,7 +114,7 @@ onUnmounted(() => {
 })
 
 const startChat = (userId: number) => {
-  router.push(`/chat/${userId}`)
+  router.push(`/chat/user/${userId}`)
 }
 
 const startVideoCall = (userId: number) => {

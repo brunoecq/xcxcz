@@ -96,7 +96,7 @@ app.post('/login', async (req, res) => {
       
       //const user = { ...rows[0], password: undefined, learningLanguages, availability };
       //res.json({ token, user });
-      res.json({ token, user });
+      res.json({ token });
     } else {
       res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -156,13 +156,20 @@ app.get('/chats/:userId', authenticateToken, async (req, res) => {
 
 app.post('/messages', authenticateToken, async (req, res) => {
   try {
-    const { senderId, receiverId, text } = req.body;
+    const { senderId, receiverId, roomId, text } = req.body;
     const [result] = await pool.execute(
-      'INSERT INTO messages (senderId, receiverId, text) VALUES (?, ?, ?)',
-      [senderId || null, receiverId || null, text || null]
+      'INSERT INTO messages (senderId, receiverId, roomId, text) VALUES (?, ?, ?, ?)',
+      [senderId || null, receiverId || null, roomId || null, text || null]
     );
     const [newMessage] = await pool.execute('SELECT * FROM messages WHERE id = ?', [result.insertId]);
     res.status(201).json(newMessage[0]);
+
+    // Emit the new message to the appropriate room or user
+    if (roomId) {
+      io.to(`room_${roomId}`).emit('new_message', newMessage[0]);
+    } else {
+      io.to(`user_${receiverId}`).emit('new_message', newMessage[0]);
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -171,11 +178,30 @@ app.post('/messages', authenticateToken, async (req, res) => {
 app.get('/messages/:userId1/:userId2', authenticateToken, async (req, res) => {
   try {
     const { userId1, userId2 } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
     const [rows] = await pool.execute(
-      'SELECT * FROM messages WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?) ORDER BY createdAt',
-      [userId1, userId2, userId2, userId1]
+      'SELECT * FROM messages WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?) ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+      [userId1, userId2, userId2, userId1, Number(limit), offset]
     );
-    res.json(rows);
+    res.json(rows.reverse());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/room-messages/:roomId', authenticateToken, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const [rows] = await pool.execute(
+      'SELECT * FROM messages WHERE roomId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+      [roomId, Number(limit), offset]
+    );
+    res.json(rows.reverse());
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -340,12 +366,12 @@ io.on('connection', (socket) => {
   console.log('New client connected');
 
   socket.on('join', (userId) => {
-    socket.join(userId);
+    socket.join(`user_${userId}`);
   });
 
   socket.on('join_room', async ({ roomId, user }) => {
-    socket.join(roomId);
-    socket.to(roomId).emit('user_joined', user);
+    socket.join(`room_${roomId}`);
+    socket.to(`room_${roomId}`).emit('user_joined', user);
     try {
       await pool.execute('INSERT INTO room_users (room_id, user_id) VALUES (?, ?)', [roomId || null, user.id || null]);
       await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [roomId || null]);
@@ -355,8 +381,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('leave_room', async ({ roomId, userId }) => {
-    socket.leave(roomId);
-    socket.to(roomId).emit('user_left', userId);
+    socket.leave(`room_${roomId}`);
+    socket.to(`room_${roomId}`).emit('user_left', userId);
     try {
       await pool.execute('DELETE FROM room_users WHERE room_id = ? AND user_id = ?', [roomId, userId]);
       await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [roomId]);
@@ -366,13 +392,19 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_message', async (message) => {
-    io.to(message.roomId).emit('new_message', message);
+    if (message.roomId) {
+      io.to(`room_${message.roomId}`).emit('new_message', message);
+    } else {
+      io.to(`user_${message.receiverId}`).emit('new_message', message);
+    }
     try {
       await pool.execute(
-        'INSERT INTO room_messages (room_id, user_id, message) VALUES (?, ?, ?)',
-        [message.roomId || null, message.senderId || null, message.text || null]
+        'INSERT INTO messages (senderId, receiverId, roomId, text) VALUES (?, ?, ?, ?)',
+        [message.senderId || null, message.receiverId || null, message.roomId || null, message.text || null]
       );
-      await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [message.roomId || null]);
+      if (message.roomId) {
+        await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [message.roomId || null]);
+      }
     } catch (error) {
       console.error('Error saving message:', error);
     }
@@ -393,7 +425,7 @@ const removeInactiveRooms = async () => {
 };
 
 // Set interval to remove inactive rooms every minute
-//setInterval(removeInactiveRooms, 60000);
+setInterval(removeInactiveRooms, 60000);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
