@@ -11,14 +11,14 @@ export const useChatStore = defineStore('chat', () => {
   const directChats = ref({})
   const acceptedConversations = ref(new Set())
 
-  const joinRoom = async (roomId: string) => {currentRoom.value = roomId
+  const joinRoom = async (roomId: string) => {
+    currentRoom.value = roomId
     socket.emit('join', roomId)
     const response = await getRoomMessages(roomId)
     messages.value = response.data
   }
 
   const sendMessageToUser = async (text: string, receiverId: string) => {
-
     const senderId = authStore.user.id // This should be the current user's ID
     const response = await sendMessage(senderId, receiverId, null, text)
     messages.value.push(response.data)
@@ -27,7 +27,6 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const sendMessageToRoom = async (text: string, roomId: string) => {
-
     const senderId = authStore.user.id // This should be the current user's ID
     const response = await sendMessage(senderId, null, roomId, text)
     messages.value.push(response.data)
@@ -42,11 +41,13 @@ export const useChatStore = defineStore('chat', () => {
 
   const fetchMessages = async (userId1: string, userId2: string, page: number = 1, limit: number = 10) => {
     const response = await getMessages(userId1, userId2, page, limit)
+    messages.value = [...response.data.reverse(), ...messages.value]
     return response.data
   }
 
   const fetchRoomMessages = async (roomId: string, page: number = 1, limit: number = 10) => {
     const response = await getRoomMessages(roomId, page, limit)
+    messages.value = [...response.data.reverse(), ...messages.value]
     return response.data
   }
 
@@ -60,7 +61,10 @@ export const useChatStore = defineStore('chat', () => {
 
   // Listen for incoming messages
   socket.on('new_message', (message) => {
-    messages.value.push(message)
+    if ((currentRoom.value && message.roomId === currentRoom.value) ||
+        (!currentRoom.value && (message.senderId === authStore.user.id || message.receiverId === authStore.user.id))) {
+      messages.value.push(message)
+    }
   })
 
   return { 

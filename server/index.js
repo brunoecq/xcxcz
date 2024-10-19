@@ -157,9 +157,9 @@ app.get('/chats/:userId', authenticateToken, async (req, res) => {
 app.post('/messages', authenticateToken, async (req, res) => {
   try {
     const { senderId, receiverId, roomId, text } = req.body;
-    const [result] = await pool.execute(
+    const [result] = await pool.query(
       'INSERT INTO messages (senderId, receiverId, roomId, text) VALUES (?, ?, ?, ?)',
-      [senderId || null, receiverId || null, roomId || null, text || null]
+      [senderId, receiverId || null, roomId || null, text]
     );
     const [newMessage] = await pool.execute('SELECT * FROM messages WHERE id = ?', [result.insertId]);
     res.status(201).json(newMessage[0]);
@@ -167,10 +167,12 @@ app.post('/messages', authenticateToken, async (req, res) => {
     // Emit the new message to the appropriate room or user
     if (roomId) {
       io.to(`room_${roomId}`).emit('new_message', newMessage[0]);
-    } else {
+    } else if (receiverId) {
       io.to(`user_${receiverId}`).emit('new_message', newMessage[0]);
+      io.to(`user_${senderId}`).emit('new_message', newMessage[0]);
     }
   } catch (error) {
+    console.error('Error saving message:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -181,7 +183,7 @@ app.get('/messages/:userId1/:userId2', authenticateToken, async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
 
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       'SELECT * FROM messages WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?) ORDER BY createdAt DESC LIMIT ? OFFSET ?',
       [userId1, userId2, userId2, userId1, Number(limit), offset]
     );
@@ -198,7 +200,7 @@ app.get('/room-messages/:roomId', authenticateToken, async (req, res) => {
     const offset = (page - 1) * limit;
 
     const [rows] = await pool.execute(
-      'SELECT * FROM messages WHERE roomId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+      'SELECT m.*, u.name as senderName FROM messages m JOIN users u ON m.senderId = u.id WHERE m.roomId = ? ORDER BY m.createdAt DESC LIMIT ? OFFSET ?',
       [roomId, Number(limit), offset]
     );
     res.json(rows.reverse());
@@ -397,17 +399,17 @@ io.on('connection', (socket) => {
     } else {
       io.to(`user_${message.receiverId}`).emit('new_message', message);
     }
-    try {
-      await pool.execute(
-        'INSERT INTO messages (senderId, receiverId, roomId, text) VALUES (?, ?, ?, ?)',
-        [message.senderId || null, message.receiverId || null, message.roomId || null, message.text || null]
-      );
-      if (message.roomId) {
-        await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [message.roomId || null]);
-      }
-    } catch (error) {
-      console.error('Error saving message:', error);
-    }
+    // try {
+    //   await pool.execute(
+    //     'INSERT INTO messages (senderId, receiverId, roomId, text) VALUES (?, ?, ?, ?)',
+    //     [message.senderId || null, message.receiverId || null, message.roomId || null, message.text || null]
+    //   );
+    //   if (message.roomId) {
+    //     await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [message.roomId || null]);
+    //   }
+    // } catch (error) {
+    //   console.error('Error saving message:', error);
+    // }
   });
 
   socket.on('disconnect', () => {

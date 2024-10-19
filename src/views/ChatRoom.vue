@@ -7,9 +7,9 @@
       <p v-if="room?.coHost">{{ $t('coHost') }}: {{ room.coHost.name }}</p>
     </div>
     <div class="flex-1 overflow-y-auto p-4 space-y-4">
-      <div v-for="message in currentMessages" :key="message.id" class="flex" :class="{ 'justify-end': message.senderId === currentUser.id }">
+      <div v-for="message in chatStore.messages" :key="message.id" class="flex" :class="{ 'justify-end': message.senderId === currentUser.id }">
         <div :class="['max-w-xs lg:max-w-md px-4 py-2 rounded-lg', message.senderId === currentUser.id ? 'bg-blue-500 text-white' : 'bg-white']">
-          <p class="font-semibold">{{ getUserName(message.senderId) }}</p>
+          <p class="font-semibold">{{ message.senderName || getUserName(message.senderId) }}</p>
           <p>{{ message.text }}</p>
           <p class="text-xs opacity-75">{{ formatTime(message.createdAt) }}</p>
         </div>
@@ -68,10 +68,8 @@ const roomStore = useRoomStore()
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 
-debugger
 const room = computed(() => roomStore.rooms.find(r => r.id == route.params.roomId))
 const currentUser = computed(() => authStore.user)
-const currentMessages = ref([])
 const newMessage = ref('')
 const showEmojiPicker = ref(false)
 const showAssignCoHostModal = ref(false)
@@ -85,12 +83,12 @@ onMounted(async () => {
     router.push('/login')
     return
   }
-  await loadMessages()
+  await chatStore.joinRoom(route.params.roomId as string)
   joinRoom()
 
   socket.on('new_message', (message) => {
     if (message.roomId === route.params.roomId) {
-      currentMessages.value.push(message)
+      chatStore.messages.push(message)
     }
   })
 
@@ -118,14 +116,10 @@ onMounted(async () => {
 
 watch(() => route.params.roomId, async (newRoomId) => {
   if (newRoomId) {
-    await loadMessages()
+    await chatStore.joinRoom(newRoomId as string)
     joinRoom()
   }
 })
-
-const loadMessages = async () => {
-  currentMessages.value = await chatStore.fetchRoomMessages(route.params.roomId as string)
-}
 
 const joinRoom = () => {
   if (room.value && currentUser.value) {
@@ -134,10 +128,8 @@ const joinRoom = () => {
 }
 
 const sendMessage = async () => {
-  debugger
   if (newMessage.value.trim() && room.value) {
-    const sentMessage = await chatStore.sendMessageToRoom(newMessage.value, room.value.id)
-    currentMessages.value.push(sentMessage)
+    await chatStore.sendMessageToRoom(newMessage.value, room.value.id)
     newMessage.value = ''
   }
 }

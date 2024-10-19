@@ -31,14 +31,33 @@ CREATE TABLE availability (
   FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE rooms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  language VARCHAR(50) NOT NULL,
+  level VARCHAR(20) NOT NULL,
+  description TEXT,
+  created_by INT NOT NULL,
+  host_id INT NOT NULL,
+  cohost_id INT,
+  is_active BOOLEAN DEFAULT TRUE,
+  last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (host_id) REFERENCES users(id),
+  FOREIGN KEY (cohost_id) REFERENCES users(id)
+);
+
 CREATE TABLE messages (
   id INT AUTO_INCREMENT PRIMARY KEY,
   senderId INT NOT NULL,
-  receiverId INT NOT NULL,
+  receiverId INT,
+  roomId INT,
   text TEXT NOT NULL,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (senderId) REFERENCES users(id),
-  FOREIGN KEY (receiverId) REFERENCES users(id)
+  FOREIGN KEY (receiverId) REFERENCES users(id),
+  FOREIGN KEY (roomId) REFERENCES rooms(id) ON DELETE CASCADE
 );
 
 CREATE TABLE reviews (
@@ -69,23 +88,6 @@ CREATE TABLE blocked_users (
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (blockerId) REFERENCES users(id),
   FOREIGN KEY (blockedId) REFERENCES users(id)
-);
-
-CREATE TABLE rooms (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  language VARCHAR(50) NOT NULL,
-  level VARCHAR(20) NOT NULL,
-  description TEXT,
-  created_by INT NOT NULL,
-  host_id INT NOT NULL,
-  cohost_id INT,
-  is_active BOOLEAN DEFAULT TRUE,
-  last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (created_by) REFERENCES users(id),
-  FOREIGN KEY (host_id) REFERENCES users(id),
-  FOREIGN KEY (cohost_id) REFERENCES users(id)
 );
 
 CREATE TABLE room_users (
