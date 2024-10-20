@@ -39,7 +39,6 @@ export const useRoomStore = defineStore('room', () => {
           users: [],
           lastActivity: new Date()
         }))
-        debugger
         return rooms.value
       } else {
         console.error('Fetched rooms is not an array:', response.data)

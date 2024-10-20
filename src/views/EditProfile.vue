@@ -107,7 +107,6 @@ const profile = ref({
 const loadUserProfile = async () => {
   try {
     const userData = await authStore.fetchUserProfile()
-    debugger
     profile.value = { 
       ...userData,
       learningLanguages: userData.learningLanguages || [],
