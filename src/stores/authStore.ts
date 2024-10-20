@@ -111,5 +111,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, isAuthenticated, loginUser, registerUser, logout, updateProfile, initAuth }
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token.value}`
+        }
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile')
+      }
+      const profileData = await response.json()
+      user.value = profileData
+      return profileData
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+      throw error
+    }
+  }
+
+  return { user, token, isAuthenticated, loginUser, registerUser, logout, updateProfile, initAuth, fetchUserProfile }
 })

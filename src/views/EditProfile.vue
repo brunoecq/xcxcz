@@ -104,30 +104,32 @@ const profile = ref({
   allowRandomCalls: false
 })
 
-const loadUserProfile = () => {
-  if (authStore.user) {
+const loadUserProfile = async () => {
+  try {
+    const userData = await authStore.fetchUserProfile()
+    debugger
     profile.value = { 
-      ...authStore.user,
-      learningLanguages: authStore.user.learningLanguages || [],
-      availability: authStore.user.availability || [],
-      allowRandomCalls: Number.isInteger(authStore.user.allowRandomCalls) ? authStore.user.allowRandomCalls == 1 : authStore.user.allowRandomCalls || false
+      ...userData,
+      learningLanguages: userData.learningLanguages || [],
+      availability: userData.availability || [],
+      allowRandomCalls: userData.allowRandomCalls || false
     }
     updateTimezones()
-  } else {
+  } catch (error) {
+    console.error('Error loading user profile:', error)
+    toastStore.showToast('Failed to load user profile', 'error')
     router.push('/login')
   }
 }
 
 onMounted(() => {
-  debugger
-  loadUserProfile()
-})
-
-watch(() => authStore.user, (newUser) => {
-  if (newUser) {
+  if (authStore.isAuthenticated) {
     loadUserProfile()
+  } else {
+    router.push('/login')
   }
 })
+
 
 
 const updateTimezones = () => {

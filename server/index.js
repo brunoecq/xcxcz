@@ -363,6 +363,45 @@ app.post('/rooms/:roomId/assign-cohost', authenticateToken, async (req, res) => 
   }
 });
 
+app.get('/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const [userRows] = await pool.execute(
+      'SELECT id, name, email, nativeLanguage, country, timezone, allowRandomCalls FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userRows[0];
+
+    // Fetch learning languages
+    const [learningLanguages] = await pool.execute(
+      'SELECT language, level FROM learning_languages WHERE userId = ?',
+      [user.id]
+    );
+
+    // Fetch availability
+    const [availability] = await pool.execute(
+      'SELECT day, startTime, endTime FROM availability WHERE userId = ?',
+      [user.id]
+    );
+
+    const userProfile = {
+      ...user,
+      learningLanguages,
+      availability,
+      allowRandomCalls: !!user.allowRandomCalls
+    };
+
+    res.json(userProfile);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // WebSocket and WebRTC
 io.on('connection', (socket) => {
   console.log('New client connected');
