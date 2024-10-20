@@ -23,7 +23,8 @@
             </select>
             <NotificationCenter />
             <div class="ml-3 relative">
-              <div v-if="isLoggedIn">
+              <div class="flex" v-if="isLoggedIn">
+                <span class="text-white mr-4">{{ userName }}</span>
                 <button @click="toggleDropdown" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-indigo-600 focus:ring-white">
                   <img class="h-8 w-8 rounded-full" :src="userAvatar" alt="">
                 </button>
@@ -77,6 +78,7 @@ const authStore = useAuthStore()
 const showDropdown = ref(false)
 const isLoggedIn = computed(() => !!authStore.user)
 const userAvatar = computed(() => authStore.user?.avatar || 'https://i.pravatar.cc/150')
+const userName = computed(() => authStore.user?.name || '')
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
