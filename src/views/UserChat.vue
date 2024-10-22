@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-screen bg-gray-100">
     <div class="bg-white shadow-md p-4">
-      <h2 class="text-2xl font-bold">Chat with {{ otherUser?.name }}</h2>
+      <h2 class="text-2xl font-bold">Chat with {{ otherUser?.name || 'Loading...' }}</h2>
     </div>
     <div class="flex-1 overflow-y-auto p-4 space-y-4" ref="chatContainer">
       <div v-for="message in currentMessages" :key="message.id" class="flex" :class="{ 'justify-end': message.senderId === currentUser.id }">
@@ -46,13 +46,18 @@ const newMessage = ref('')
 const showEmojiPicker = ref(false)
 const chatContainer = ref(null)
 
-const otherUser = computed(() => userStore.users.find(u => u.id.toString() === userId.value))
+const otherUser = computed(() => {
+  if (userStore.users.length === 0) return null
+  debugger
+  return userStore.users.find(u => u.id.toString() === userId.value)
+})
 
 onMounted(async () => {
   if (!authStore.isAuthenticated) {
     router.push('/login')
     return
   }
+  await loadUsers()
   await loadMessages()
   scrollToBottom()
   setupSocketListeners()
@@ -63,12 +68,16 @@ onUnmounted(() => {
   socket.emit('leave', `user_${currentUser.value.id}`)
 })
 
+const loadUsers = async () => {
+  if (userStore.users.length === 0) {
+    await userStore.fetchUsers()
+  }
+}
+
 const setupSocketListeners = () => {
-  // Join the user's channel
   socket.emit('join', `${currentUser.value.id}`)
 
   socket.on('new_message', (message) => {
-    
     console.log('Received message:', message)
     if (
       (message.senderId === currentUser.value.id.toString() && message.receiverId === userId.value) ||
@@ -101,10 +110,9 @@ const sendMessage = async () => {
       text: newMessage.value
     }
     socket.emit('send_message', messageData)
-    // Optimistically add the message to the UI
     currentMessages.value.push({
       ...messageData,
-      id: Date.now(), // Temporary ID
+      id: Date.now(),
       createdAt: new Date().toISOString()
     })
     newMessage.value = ''

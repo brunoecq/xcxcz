@@ -34,6 +34,7 @@ export const useUserStore = defineStore('user', () => {
   const fetchUsers = async (page: number = 1, limit: number = 10) => {
     try {
       const response = await getUsers(page, limit)
+      debugger
       users.value = response.data.map(user => ({
         ...user,
         status: user.status as UserStatus,
