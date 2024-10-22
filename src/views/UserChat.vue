@@ -64,7 +64,6 @@ onUnmounted(() => {
 })
 
 const setupSocketListeners = () => {
-  debugger
   // Join the user's channel
   socket.emit('join', `${currentUser.value.id}`)
 

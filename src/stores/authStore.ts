@@ -28,8 +28,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = {
         id: decodedToken.id,
         email: decodedToken.email,
+        name: decodedToken.name
         // Añade aquí otros campos del usuario que estén en el token
-      }
+      } as any
     }
   }
 
