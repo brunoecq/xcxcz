@@ -102,6 +102,8 @@ const loadMessages = async () => {
 
 const sendMessage = async () => {
   if (newMessage.value.trim()) {
+    await chatStore.sendMessageToUser(newMessage.value, userId.value)
+
     const messageData = {
       senderId: currentUser.value.id.toString(),
       receiverId: userId.value,
