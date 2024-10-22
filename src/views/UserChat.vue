@@ -19,7 +19,7 @@
         <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Send</button>
       </form>
       <div v-if="showEmojiPicker" class="mt-2">
-        <!-- Aquí iría el componente del selector de emojis -->
+        <EmojiPicker @select="onEmojiSelect" />
       </div>
     </div>
   </div>
@@ -32,6 +32,8 @@ import { useChatStore } from '../stores/chatStore'
 import { useUserStore } from '../stores/userStore'
 import { useAuthStore } from '../stores/authStore'
 import { socket } from '../api'
+import EmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,11 +73,9 @@ const loadUsers = async () => {
 }
 
 const setupSocketListeners = () => {
-  // Join the user's channel
   socket.emit('join', `${currentUser.value.id}`)
 
   socket.on('new_message', (message) => {
-    
     console.log('Received message:', message)
     if (
       (message.senderId === currentUser.value.id.toString() && message.receiverId === userId.value) ||
@@ -108,10 +108,9 @@ const sendMessage = async () => {
       text: newMessage.value
     }
     socket.emit('send_message', messageData)
-    // Optimistically add the message to the UI
     currentMessages.value.push({
       ...messageData,
-      id: Date.now(), // Temporary ID
+      id: Date.now(),
       createdAt: new Date().toISOString()
     })
     newMessage.value = ''
@@ -136,6 +135,11 @@ const getUserName = (userId: string) => {
 
 const toggleEmojiPicker = () => {
   showEmojiPicker.value = !showEmojiPicker.value
+}
+
+const onEmojiSelect = (emoji) => {
+  newMessage.value += emoji.i
+  showEmojiPicker.value = false
 }
 
 const scrollToBottom = () => {
