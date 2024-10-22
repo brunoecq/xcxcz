@@ -6,17 +6,17 @@
         {{ $t('startRandomCall') }}
       </button>
     </div>
-    <div v-if="users.length === 0" class="text-center text-gray-500">
+    <div v-if="filteredUsers.length === 0" class="text-center text-gray-500">
       {{ $t('noUsersFound') }}
     </div>
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="user in users" :key="user.id" class="bg-white shadow-md rounded-lg p-6">
+      <div v-for="user in filteredUsers" :key="user.id" class="bg-white shadow-md rounded-lg p-6">
         <div class="flex items-center mb-4">
           <img :src="`https://i.pravatar.cc/150?u=${user.id}`" :alt="user.name" class="w-16 h-16 rounded-full mr-4">
           <div>
             <h3 class="text-xl font-semibold flex items-center">
               {{ user.name }}
-              <UserStatusIndicator :status="user.status" class="ml-2" />
+              <UserStatusIndicator :status="getUserStatus(user)" class="ml-2" />
             </h3>
             <p class="text-gray-600">{{ user.email }}</p>
             <p class="text-sm text-gray-500">{{ $t('currentTime') }}: {{ getCurrentTime(user.timezone) }}</p>
@@ -60,19 +60,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '../stores/userStore'
+import { useAuthStore } from '../stores/authStore'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import UserStatusIndicator from '../components/UserStatusIndicator.vue'
+import { socket } from '../api'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 const router = useRouter()
 const users = ref([])
 const page = ref(1)
 const loading = ref(false)
 const loadMoreTrigger = ref(null)
+
+const filteredUsers = computed(() => {
+  return users.value.filter(user => user.id !== authStore.user?.id)
+})
 
 const loadUsers = async () => {
   if (loading.value) return
@@ -94,7 +101,7 @@ const handleIntersect = (entries) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadUsers()
   const observer = new IntersectionObserver(handleIntersect, {
     root: null,
@@ -104,6 +111,20 @@ onMounted(() => {
   if (loadMoreTrigger.value) {
     observer.observe(loadMoreTrigger.value)
   }
+
+  // Suscribirse a actualizaciones de estado
+  socket.on('user_status_update', ({ userId, status }) => {
+    const userIndex = users.value.findIndex(u => u.id == userId)
+    if (userIndex !== -1) {
+      users.value[userIndex].status = status
+    }
+  })
+
+  // Emitir estado activo
+  socket.emit('user_status', {
+    userId: authStore.user?.id,
+    status: 'online'
+  })
 })
 
 onUnmounted(() => {
@@ -111,6 +132,12 @@ onUnmounted(() => {
     const observer = new IntersectionObserver(handleIntersect)
     observer.unobserve(loadMoreTrigger.value)
   }
+
+  // Emitir estado inactivo al desmontar
+  socket.emit('user_status', {
+    userId: authStore.user?.id,
+    status: 'offline'
+  })
 })
 
 const startChat = (userId: number) => {
@@ -125,8 +152,12 @@ const getCurrentTime = (timezone: string) => {
   return new Date().toLocaleString('en-US', { timeZone: timezone, hour: '2-digit', minute: '2-digit' })
 }
 
-const formatAvailability = (availability: { day: string, startTime: string, endTime: string }[]) => {
-  return availability.map(slot => `${slot.day} ${slot.startTime}-${slot.endTime}`).join(', ')
+const getUserStatus = (user) => {
+  // Si el usuario está conectado al socket, su estado es 'online'
+  if (socket.connected && user.status == 'online') {
+    return 'online'
+  }
+  return user.status || 'offline'
 }
 
 const startRandomCall = async () => {

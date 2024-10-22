@@ -31,6 +31,9 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// Mantener registro de usuarios conectados y sus sockets
+const connectedUsers = new Map();
+
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -124,6 +127,8 @@ app.get('/users', authenticateToken, async (req, res) => {
       const [availability] = await pool.execute('SELECT day, startTime, endTime FROM availability WHERE userId = ?', [user.id]);
       user.learningLanguages = learningLanguages;
       user.availability = availability;
+      // Agregar el estado del usuario
+      user.status = connectedUsers.has(user.id.toString()) ? 'online' : 'offline';
     }
     
     res.json(rows);
@@ -405,9 +410,28 @@ app.get('/user/profile', authenticateToken, async (req, res) => {
 // WebSocket and WebRTC
 io.on('connection', (socket) => {
   console.log('New client connected');
+  let userId = null;
 
-  socket.on('join', (userId) => {
-    socket.join(`user_${userId}`);
+  socket.on('join', (id) => {
+    userId = id;
+    socket.join(`user_${id}`);
+    connectedUsers.set(id, socket.id);
+    
+    // Notificar a todos los usuarios sobre el cambio de estado
+    io.emit('user_status_update', {
+      userId: id,
+      status: 'online'
+    });
+  });
+
+  socket.on('user_status', ({ userId, status }) => {
+    if (userId) {
+      // Actualizar el estado del usuario
+      io.emit('user_status_update', {
+        userId,
+        status
+      });
+    }
   });
 
   socket.on('join_room', async ({ roomId, user }) => {
@@ -438,21 +462,18 @@ io.on('connection', (socket) => {
     } else {
       io.to(`user_${message.receiverId}`).emit('new_message', message);
     }
-    // try {
-    //   await pool.execute(
-    //     'INSERT INTO messages (senderId, receiverId, roomId, text) VALUES (?, ?, ?, ?)',
-    //     [message.senderId || null, message.receiverId || null, message.roomId || null, message.text || null]
-    //   );
-    //   if (message.roomId) {
-    //     await pool.execute('UPDATE rooms SET last_activity = NOW() WHERE id = ?', [message.roomId || null]);
-    //   }
-    // } catch (error) {
-    //   console.error('Error saving message:', error);
-    // }
   });
 
   socket.on('disconnect', () => {
     console.log('Client disconnected');
+    if (userId) {
+      connectedUsers.delete(userId);
+      // Notificar a todos los usuarios sobre el cambio de estado
+      io.emit('user_status_update', {
+        userId,
+        status: 'offline'
+      });
+    }
   });
 });
 
