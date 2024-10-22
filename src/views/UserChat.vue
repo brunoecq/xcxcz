@@ -71,7 +71,6 @@ const loadUsers = async () => {
 }
 
 const setupSocketListeners = () => {
-  debugger
   // Join the user's channel
   socket.emit('join', `${currentUser.value.id}`)
 
@@ -129,7 +128,7 @@ const formatTime = (timestamp: string) => {
 }
 
 const getUserName = (userId: string) => {
-  if (userId === currentUser.value.id.toString()) {
+  if (userId == currentUser.value.id) {
     return currentUser.value.name
   }
   return otherUser.value ? otherUser.value.name : 'Unknown User'
