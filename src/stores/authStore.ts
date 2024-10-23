@@ -1,10 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login, register, updateProfile as apiUpdateProfile, refreshToken } from '../api'
+import { socket } from '../api'
+import { useNotificationStore } from './notificationStore'
+import { useRouter } from 'vue-router'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('token') || null)
+  const router = useRouter()
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -29,9 +33,32 @@ export const useAuthStore = defineStore('auth', () => {
         id: decodedToken.id,
         email: decodedToken.email,
         name: decodedToken.name
-        // Añade aquí otros campos del usuario que estén en el token
-      } as any
+      }
     }
+  }
+
+  const setupSocketListeners = () => {
+    socket.on('new_message', (message) => {
+      const notificationStore = useNotificationStore()
+      const currentRoute = router.currentRoute.value
+      const isInChat = currentRoute.name === 'UserChat' && currentRoute.params.userId == message.senderId
+      const isInRoom = currentRoute.name === 'ChatRoom' && currentRoute.params.roomId == message.roomId
+      const isSender = message.senderId == user.value?.id
+
+      if (!isSender && !isInChat && !isInRoom) {
+        notificationStore.addNotification({
+          type: 'message',
+          content: `New message from ${message.senderName || 'Unknown User'}`,
+          link: message.roomId ? `/chat/room/${message.roomId}` : `/chat/user/${message.senderId}`
+        })
+      }
+    })
+
+    socket.on('connect', () => {
+      if (user.value) {
+        socket.emit('join', user.value.id)
+      }
+    })
   }
 
   const loginUser = async (email: string, password: string) => {
@@ -40,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = response.data.token
       localStorage.setItem('token', token.value)
       setUserFromToken(token.value)
+      setupSocketListeners()
       startRefreshTokenTimer()
     } catch (error) {
       console.error('Login failed:', error)
@@ -57,6 +85,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = () => {
+    socket.off('new_message')
+    socket.off('connect')
     user.value = null
     token.value = null
     localStorage.removeItem('token')
@@ -102,12 +132,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Initialize the auth state
   const initAuth = () => {
     const storedToken = localStorage.getItem('token')
     if (storedToken) {
       token.value = storedToken
       setUserFromToken(storedToken)
+      setupSocketListeners()
       startRefreshTokenTimer()
     }
   }
@@ -131,5 +161,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, isAuthenticated, loginUser, registerUser, logout, updateProfile, initAuth, fetchUserProfile }
+  return { 
+    user, 
+    token, 
+    isAuthenticated, 
+    loginUser, 
+    registerUser, 
+    logout, 
+    updateProfile, 
+    initAuth, 
+    fetchUserProfile 
+  }
 })
