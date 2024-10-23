@@ -24,7 +24,7 @@
         <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Send</button>
       </form>
       <div v-if="showEmojiPicker" class="absolute bottom-full right-0 mb-2">
-        <EmojiPicker @select="onEmojiSelect" />
+        <emoji-picker @emoji-click="onEmojiSelect"></emoji-picker>
       </div>
     </div>
   </div>
@@ -37,8 +37,7 @@ import { useChatStore } from '../stores/chatStore'
 import { useUserStore } from '../stores/userStore'
 import { useAuthStore } from '../stores/authStore'
 import { socket } from '../api'
-import EmojiPicker from 'vue3-emoji-picker'
-import 'vue3-emoji-picker/css'
+import 'emoji-picker-element'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,7 +79,7 @@ onUnmounted(() => {
 
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
-  if (!target.closest('.emoji-picker') && !target.closest('button')) {
+  if (!target.closest('emoji-picker') && !target.closest('button')) {
     showEmojiPicker.value = false
   }
 }
@@ -205,8 +204,8 @@ const toggleEmojiPicker = (event: MouseEvent) => {
   showEmojiPicker.value = !showEmojiPicker.value
 }
 
-const onEmojiSelect = (emoji) => {
-  newMessage.value += emoji.i
+const onEmojiSelect = (event: CustomEvent) => {
+  newMessage.value += event.detail.unicode
   showEmojiPicker.value = false
 }
 
@@ -218,7 +217,9 @@ const scrollToBottom = () => {
 </script>
 
 <style scoped>
-:deep(.emoji-picker) {
+emoji-picker {
+  width: 300px;
+  height: 400px;
   z-index: 1000;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border-radius: 0.5rem;
