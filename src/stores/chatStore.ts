@@ -19,7 +19,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const sendMessageToUser = async (text: string, receiverId: string) => {
-    const senderId = authStore.user.id // This should be the current user's ID
+    const senderId = authStore.user.id
     const response = await sendMessage(senderId, receiverId, null, text)
     messages.value.push(response.data)
     socket.emit('send_message', response.data)
@@ -27,7 +27,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const sendMessageToRoom = async (text: string, roomId: string) => {
-    const senderId = authStore.user.id // This should be the current user's ID
+    const senderId = authStore.user.id
     const response = await sendMessage(senderId, null, roomId, text)
     messages.value.push(response.data)
     socket.emit('send_message', response.data)
@@ -41,13 +41,13 @@ export const useChatStore = defineStore('chat', () => {
 
   const fetchMessages = async (userId1: string, userId2: string, page: number = 1, limit: number = 10) => {
     const response = await getMessages(userId1, userId2, page, limit)
-    messages.value = [...response.data.reverse(), ...messages.value]
+    // Return messages in chronological order (oldest to newest)
     return response.data
   }
 
   const fetchRoomMessages = async (roomId: string, page: number = 1, limit: number = 10) => {
     const response = await getRoomMessages(roomId, page, limit)
-    messages.value = [...response.data.reverse(), ...messages.value]
+    messages.value = response.data
     return response.data
   }
 
@@ -62,7 +62,7 @@ export const useChatStore = defineStore('chat', () => {
   // Listen for incoming messages
   socket.on('new_message', (message) => {
     if ((currentRoom.value && message.roomId === currentRoom.value) ||
-        (!currentRoom.value && (message.senderId === authStore.user.id || message.receiverId === authStore.user.id))) {
+        (!currentRoom.value && (message.senderId == authStore.user?.id || message.receiverId == authStore.user?.id))) {
       messages.value.push(message)
     }
   })
