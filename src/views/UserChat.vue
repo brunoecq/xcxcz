@@ -119,7 +119,9 @@ const sendMessage = async () => {
       createdAt: new Date().toISOString()
     })
     newMessage.value = ''
-    scrollToBottom()
+    nextTick(() => {
+      scrollToBottom()
+    })
   }
 }
 
