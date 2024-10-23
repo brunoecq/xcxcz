@@ -17,13 +17,13 @@
         </div>
       </div>
     </div>
-    <div class="bg-white p-4">
+    <div class="bg-white p-4 relative">
       <form @submit.prevent="sendMessage" class="flex space-x-2">
         <input v-model="newMessage" type="text" placeholder="Type a message..." class="flex-grow p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
         <button type="button" @click="toggleEmojiPicker" class="px-4 py-2 bg-gray-200 rounded-md">😊</button>
         <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Send</button>
       </form>
-      <div v-if="showEmojiPicker" class="mt-2">
+      <div v-if="showEmojiPicker" class="absolute bottom-full right-0 mb-2">
         <EmojiPicker @select="onEmojiSelect" />
       </div>
     </div>
@@ -67,12 +67,23 @@ onMounted(async () => {
   await loadMessages()
   scrollToBottom()
   setupSocketListeners()
+
+  // Close emoji picker when clicking outside
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   socket.off('new_message')
   socket.emit('leave', `user_${currentUser.value.id}`)
+  document.removeEventListener('click', handleClickOutside)
 })
+
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.emoji-picker') && !target.closest('button')) {
+    showEmojiPicker.value = false
+  }
+}
 
 const loadUsers = async () => {
   if (userStore.users.length === 0) {
@@ -189,7 +200,8 @@ const getUserName = (userId: string) => {
   return otherUser.value ? otherUser.value.name : 'Unknown User'
 }
 
-const toggleEmojiPicker = () => {
+const toggleEmojiPicker = (event: MouseEvent) => {
+  event.stopPropagation()
   showEmojiPicker.value = !showEmojiPicker.value
 }
 
@@ -204,3 +216,11 @@ const scrollToBottom = () => {
   }
 }
 </script>
+
+<style scoped>
+:deep(.emoji-picker) {
+  z-index: 1000;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 0.5rem;
+}
+</style>
