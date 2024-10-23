@@ -38,6 +38,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const setupSocketListeners = () => {
+    // Limpiar listeners anteriores
+    socket.off('new_message')
+    socket.off('connect')
+
     socket.on('new_message', (message) => {
       const notificationStore = useNotificationStore()
       const currentRoute = router.currentRoute.value
@@ -57,6 +61,21 @@ export const useAuthStore = defineStore('auth', () => {
     socket.on('connect', () => {
       if (user.value) {
         socket.emit('join', user.value.id)
+        socket.emit('user_status', {
+          userId: user.value.id,
+          status: 'online'
+        })
+      }
+    })
+
+    // Reconectar socket si se desconecta
+    socket.io.on('reconnect', () => {
+      if (user.value) {
+        socket.emit('join', user.value.id)
+        socket.emit('user_status', {
+          userId: user.value.id,
+          status: 'online'
+        })
       }
     })
   }
@@ -69,6 +88,16 @@ export const useAuthStore = defineStore('auth', () => {
       setUserFromToken(token.value)
       setupSocketListeners()
       startRefreshTokenTimer()
+      
+      // Reconectar socket después del login
+      if (!socket.connected) {
+        socket.connect()
+      }
+      socket.emit('join', user.value.id)
+      socket.emit('user_status', {
+        userId: user.value.id,
+        status: 'online'
+      })
     } catch (error) {
       console.error('Login failed:', error)
       throw error
@@ -85,8 +114,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = () => {
+    if (user.value) {
+      socket.emit('user_status', {
+        userId: user.value.id,
+        status: 'offline'
+      })
+    }
     socket.off('new_message')
     socket.off('connect')
+    socket.disconnect()
     user.value = null
     token.value = null
     localStorage.removeItem('token')
@@ -132,13 +168,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const initAuth = () => {
+  const initAuth = async () => {
     const storedToken = localStorage.getItem('token')
     if (storedToken) {
       token.value = storedToken
       setUserFromToken(storedToken)
       setupSocketListeners()
       startRefreshTokenTimer()
+      
+      try {
+        await fetchUserProfile()
+        if (!socket.connected) {
+          socket.connect()
+        }
+        socket.emit('join', user.value.id)
+        socket.emit('user_status', {
+          userId: user.value.id,
+          status: 'online'
+        })
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        logout()
+      }
     }
   }
 
