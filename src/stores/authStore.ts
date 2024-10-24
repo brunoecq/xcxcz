@@ -50,6 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
       const isSender = message.senderId == user.value?.id
 
       if (!isSender && !isInChat && !isInRoom) {
+        debugger
         notificationStore.addNotification({
           type: 'message',
           content: `New message from ${message.senderName || 'Unknown User'}`,

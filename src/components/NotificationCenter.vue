@@ -49,6 +49,16 @@ const { notifications } = storeToRefs(notificationStore)
 
 const showNotifications = ref(false)
 
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  // Cargar notificaciones al montar el componente
+  notificationStore.loadNotifications()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
 const sortedNotifications = computed(() => {
   return [...notifications.value].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 })

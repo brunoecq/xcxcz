@@ -407,6 +407,68 @@ app.get('/user/profile', authenticateToken, async (req, res) => {
   }
 });
 
+
+app.post('/notifications', authenticateToken, async (req, res) => {
+  try {
+    const { userId, type, content, link } = req.body;
+    const [result] = await pool.execute(
+      'INSERT INTO notifications (userId, type, content, link) VALUES (?, ?, ?, ?)',
+      [userId, type, content, link]
+    );
+    res.status(201).json({ id: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/notifications/:userId', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC',
+      [req.params.userId]
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/notifications/:id/read', authenticateToken, async (req, res) => {
+  try {
+    await pool.execute(
+      'UPDATE notifications SET isRead = TRUE WHERE id = ?',
+      [req.params.id]
+    );
+    res.json({ message: 'Notification marked as read' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/notifications/:id', authenticateToken, async (req, res) => {
+  try {
+    await pool.execute(
+      'DELETE FROM notifications WHERE id = ?',
+      [req.params.id]
+    );
+    res.json({ message: 'Notification deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/notifications/user/:userId', authenticateToken, async (req, res) => {
+  try {
+    await pool.execute(
+      'DELETE FROM notifications WHERE userId = ?',
+      [req.params.userId]
+    );
+    res.json({ message: 'All notifications deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // WebSocket and WebRTC
 io.on('connection', (socket) => {
   console.log('New client connected');
