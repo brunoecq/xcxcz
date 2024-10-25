@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { login, register, updateProfile as apiUpdateProfile, refreshToken } from '../api'
 import { socket } from '../api'
-import { useNotificationStore } from './notificationStore'
 import { useRouter } from 'vue-router'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -38,26 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const setupSocketListeners = () => {
-    // Limpiar listeners anteriores
-    socket.off('new_message')
     socket.off('connect')
-
-    socket.on('new_message', (message) => {
-      const notificationStore = useNotificationStore()
-      const currentRoute = router.currentRoute.value
-      const isInChat = currentRoute.name === 'UserChat' && currentRoute.params.userId == message.senderId
-      const isInRoom = currentRoute.name === 'ChatRoom' && currentRoute.params.roomId == message.roomId
-      const isSender = message.senderId == user.value?.id
-
-      if (!isSender && !isInChat && !isInRoom) {
-        debugger
-        notificationStore.addNotification({
-          type: 'message',
-          content: `New message from ${message.senderName || 'Unknown User'}`,
-          link: message.roomId ? `/chat/room/${message.roomId}` : `/chat/user/${message.senderId}`
-        })
-      }
-    })
 
     socket.on('connect', () => {
       if (user.value) {
@@ -69,7 +49,6 @@ export const useAuthStore = defineStore('auth', () => {
       }
     })
 
-    // Reconectar socket si se desconecta
     socket.io.on('reconnect', () => {
       if (user.value) {
         socket.emit('join', user.value.id)
@@ -90,7 +69,6 @@ export const useAuthStore = defineStore('auth', () => {
       setupSocketListeners()
       startRefreshTokenTimer()
       
-      // Reconectar socket después del login
       if (!socket.connected) {
         socket.connect()
       }
@@ -121,7 +99,6 @@ export const useAuthStore = defineStore('auth', () => {
         status: 'offline'
       })
     }
-    socket.off('new_message')
     socket.off('connect')
     socket.disconnect()
     user.value = null

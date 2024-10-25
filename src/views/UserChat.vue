@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-screen bg-gray-100">
+  <div class="flex flex-col h-[700px] bg-gray-100">
     <div class="bg-white shadow-md p-4">
       <h2 class="text-2xl font-bold">Chat with {{ otherUser?.name }}</h2>
     </div>
